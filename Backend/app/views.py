@@ -43,7 +43,8 @@ def process_voice(request):
             print("User said:", transcript)
             
             openai_client = OpenAI(
-                api_key='***REMOVED***',
+                # api_key='***REMOVED***',
+                api_key='YOUR_KEY',
                 base_url="https://api.groq.com/openai/v1",
             )
             
