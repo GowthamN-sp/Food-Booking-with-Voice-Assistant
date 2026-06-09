@@ -1,0 +1,138 @@
+# ============================================
+# Environment variables - NEVER commit
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.prod
+.env.staging
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ============================================
+# Virtual Environment
+# ============================================
+venv/
+ENV/
+env/
+.venv
+venv.bak/
+env.bak/
+
+# ============================================
+# IDE & Editor
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.pyc
+.pyo
+*.iml
+.gradle
+
+# ============================================
+# Database
+# ============================================
+db.sqlite3
+db.sqlite3-journal
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================
+# Django
+# ============================================
+*.log
+local_settings.py
+/media
+/staticfiles
+/static
+.webassets-cache
+
+# ============================================
+# Testing & Coverage
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
+.pytest_cache
+
+# ============================================
+# Operating Systems
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================
+# Node/Frontend (if applicable)
+# ============================================
+node_modules/
+npm-debug.log
+npm-error.log
+yarn-error.log
+dist/
+.next/
+
+# ============================================
+# Secrets & Credentials - CRITICAL
+# ============================================
+secrets.json
+credentials.json
+*.pem
+*.key
+*.crt
+.env.production
+config/secrets.json
+
+# ============================================
+# IDE specific files
+# ============================================
+*.code-workspace
+.pylintrc
+setup.cfg
+tox.ini
+
+# ============================================
+# Misc
+# ============================================
+*.bak
+*.tmp
+.cache/

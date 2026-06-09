@@ -9,12 +9,15 @@ import random
 import string
 from openai import OpenAI
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 
-
-RAZORPAY_KEY_ID ='***REMOVED***'
-RAZORPAY_KEY_SECRET = '***REMOVED***'
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET')
 
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
@@ -43,8 +46,7 @@ def process_voice(request):
             print("User said:", transcript)
             
             openai_client = OpenAI(
-                # api_key='***REMOVED***',
-                api_key='YOUR_KEY',
+                api_key=os.getenv('GROQ_API_KEY'),
                 base_url="https://api.groq.com/openai/v1",
             )
             
