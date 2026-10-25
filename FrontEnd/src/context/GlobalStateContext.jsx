@@ -1,203 +1,164 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiFetch } from '../config'
 
-export const GlobalStateContext = createContext()
+export const GlobalStateContext = createContext(null)
+
+const getOrCreateSessionId = () => {
+  if (typeof window === 'undefined') return 'guest_session'
+  let id = localStorage.getItem('sessionId')
+  if (!id) {
+    id = `guest_${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`}`
+    localStorage.setItem('sessionId', id)
+  }
+  return id
+}
+
+const readStoredUser = () => {
+  try {
+    const token = localStorage.getItem('savoraToken')
+    const raw = localStorage.getItem('user')
+    return token && raw ? JSON.parse(raw) : null
+  } catch {
+    localStorage.removeItem('user')
+    localStorage.removeItem('savoraToken')
+    return null
+  }
+}
 
 export const GlobalStateProvider = ({ children }) => {
-  const [Quantity, setQuantity] = useState(0)
   const [Togg, setTogg] = useState(false)
-  const [displayCart, setDisplayCart] = useState(false)
-  const [user, setUser] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(readStoredUser)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(readStoredUser() && localStorage.getItem('savoraToken')))
   const [loading, setLoading] = useState(true)
-  const [sessionId, setSessionId] = useState('')
+  const [sessionId] = useState(getOrCreateSessionId)
   const [foodData, setFoodData] = useState([])
+  const [foodError, setFoodError] = useState('')
   const navigate = useNavigate()
 
-  // ── Derive cart totals from foodData instead of maintaining separate state ──
-  const syncCartState = useCallback((data) => {
-    const total = data.reduce((sum, item) => sum + (item.Quantity || 0), 0)
-    setQuantity(total)
-    setDisplayCart(total > 0)
-  }, [])
+  const cartCount = useMemo(() => foodData.reduce((sum, item) => sum + Math.max(0, Number(item.Quantity) || 0), 0), [foodData])
+  const displayCart = cartCount > 0
 
-  // ── Fetch food items once on mount ──────────────────────────────────────────
   const fetchFoodData = useCallback(async () => {
+    setFoodError('')
     try {
-      const res = await fetch('http://localhost:3000/')
-      const data = await res.json()
-      setFoodData(data)
-      syncCartState(data)
-    } catch (error) {
-      console.error('Error fetching food data:', error)
-    }
-  }, [syncCartState])
-
-  // ── Session ID + user restore + initial data fetch (runs once) ─────────────
-  useEffect(() => {
-    let sid = localStorage.getItem('sessionId')
-    if (!sid) {
-      sid = 'session_' + Math.random().toString(36).substr(2, 9)
-      localStorage.setItem('sessionId', sid)
-    }
-    setSessionId(sid)
-
-    const savedUser = localStorage.getItem('user')
-    const savedLoginState = localStorage.getItem('isLoggedIn')
-    if (savedUser && savedLoginState === 'true') {
-      setUser(JSON.parse(savedUser))
-      setIsLoggedIn(true)
-    }
-
-    setLoading(false)
-    fetchFoodData()           // single fetch — no interval
-  }, [fetchFoodData])
-
-  // ── Update quantity — optimistic local update, one API call ─────────────────
-  const updateQuantity = useCallback(async (foodId, delta) => {
-    // 1. Optimistically update local state so UI responds instantly
-    setFoodData(prev => {
-      const updated = prev.map(item => {
-        if (item.FoodID !== foodId) return item
-        return { ...item, Quantity: Math.max(0, (item.Quantity || 0) + delta) }
-      })
-      syncCartState(updated)
-      return updated
-    })
-
-    // 2. Persist to backend
-    try {
-      let response
-
-      if (isLoggedIn && user) {
-        response = await fetch(`http://localhost:3000/update-quantity/${foodId}/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quantity: delta }),
-        })
-      } else {
-        // Session cart: read current local quantity instead of fetching again
-        const currentItem = foodData.find(item => item.FoodID === foodId)
-        const currentQty = currentItem?.Quantity || 0
-        const newQuantity = Math.max(0, currentQty + delta)
-
-        response = await fetch('http://localhost:3000/session-cart/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, foodId, quantity: newQuantity }),
-        })
+      const response = await apiFetch(`/?sessionId=${encodeURIComponent(sessionId)}`)
+      if (response.status === 401 && localStorage.getItem('savoraToken')) {
+        localStorage.removeItem('savoraToken')
+        localStorage.removeItem('user')
+        localStorage.removeItem('isLoggedIn')
+        setUser(null)
+        setIsLoggedIn(false)
+        throw new Error('Your session expired. Please sign in again.')
       }
-
-      if (!response.ok) {
-        // Roll back optimistic update if backend rejected it
-        console.error('Backend rejected quantity update — rolling back')
-        fetchFoodData()
-      }
+      if (!response.ok) throw new Error(`Menu request failed (${response.status}).`)
+      const data = await response.json()
+      if (!Array.isArray(data)) throw new Error('The menu response was not in the expected format.')
+      setFoodData(data.map(item => ({ ...item, Quantity: Math.max(0, Number(item.Quantity) || 0) })))
     } catch (error) {
-      console.error('Error updating quantity:', error)
-      fetchFoodData()   // re-sync on network error
-    }
-  }, [isLoggedIn, user, sessionId, foodData, syncCartState, fetchFoodData])
-
-  // ── Clear cart ──────────────────────────────────────────────────────────────
-  const clearCart = useCallback(async () => {
-    try {
-      if (isLoggedIn && user) {
-        const itemsInCart = foodData.filter(item => item.Quantity > 0)
-        for (const item of itemsInCart) {
-          await fetch(`http://localhost:3000/update-quantity/${item.FoodID}/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: -item.Quantity }),   // set to 0
-          })
-        }
-      } else {
-        await fetch(`http://localhost:3000/session-cart/clear/${sessionId}/`, {
-          method: 'DELETE',
-        })
-      }
-
-      // Clear locally
-      setFoodData(prev => prev.map(item => ({ ...item, Quantity: 0 })))
-      setQuantity(0)
-      setDisplayCart(false)
-    } catch (error) {
-      console.error('Error clearing cart:', error)
-    }
-  }, [isLoggedIn, user, sessionId, foodData])
-
-  // ── Transfer guest session cart → logged-in user ────────────────────────────
-  const transferSessionCartToUser = useCallback(async () => {
-    try {
-      const sessionRes = await fetch(`http://localhost:3000/session-cart/${sessionId}/`)
-      const sessionCart = await sessionRes.json()
-
-      for (const item of sessionCart) {
-        await fetch(`http://localhost:3000/update-quantity/${item.food_id}/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quantity: item.quantity }),
-        })
-      }
-
-      await fetch(`http://localhost:3000/session-cart/clear/${sessionId}/`, {
-        method: 'DELETE',
-      })
-    } catch (error) {
-      console.error('Error transferring cart:', error)
+      setFoodError(error.message || 'Could not load the menu. Check that the backend is running.')
+      console.error('Savora menu load failed:', error)
+    } finally {
+      setLoading(false)
     }
   }, [sessionId])
 
-  // ── Login ───────────────────────────────────────────────────────────────────
-  const login = useCallback(async (userData) => {
-    await transferSessionCartToUser()
+  useEffect(() => { fetchFoodData() }, [fetchFoodData, user?.user_id])
 
-    setUser(userData)
-    setIsLoggedIn(true)
+  const updateQuantity = useCallback(async (foodId, delta) => {
+    const id = Number(foodId)
+    const change = Number(delta)
+    if (!Number.isInteger(id) || !Number.isInteger(change) || change === 0) return false
+    const current = foodData.find(item => Number(item.FoodID) === id)
+    if (!current) return false
+    const optimistic = Math.max(0, (Number(current.Quantity) || 0) + change)
+    if (optimistic > 25) {
+      setFoodError('You can add up to 25 of one menu item.')
+      return false
+    }
+    setFoodData(prev => prev.map(item => Number(item.FoodID) === id ? { ...item, Quantity: optimistic } : item))
+    setFoodError('')
+    try {
+      let response
+      if (isLoggedIn && user) {
+        response = await apiFetch(`/update-quantity/${id}/`, { method: 'POST', body: JSON.stringify({ quantity: change }) })
+      } else {
+        response = await apiFetch('/session-cart/', { method: 'POST', body: JSON.stringify({ sessionId, foodId: id, delta: change }) })
+      }
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.success) throw new Error(data.error || 'Could not update the cart.')
+      setFoodData(prev => prev.map(item => Number(item.FoodID) === id ? { ...item, Quantity: Number(data.newQuantity ?? optimistic) } : item))
+      return true
+    } catch (error) {
+      setFoodError(error.message || 'Could not update the cart. Please try again.')
+      await fetchFoodData()
+      return false
+    }
+  }, [foodData, isLoggedIn, user, sessionId, fetchFoodData])
+
+  const clearCart = useCallback(async () => {
+    const cartKey = isLoggedIn && user ? `user_${user.user_id}` : sessionId
+    try {
+      const response = await apiFetch(`/session-cart/clear/${encodeURIComponent(cartKey)}/`, { method: 'DELETE' })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.success) throw new Error(data.error || 'Could not clear the cart.')
+      setFoodData(prev => prev.map(item => ({ ...item, Quantity: 0 })))
+      setFoodError('')
+      return true
+    } catch (error) {
+      setFoodError(error.message || 'Could not clear the cart.')
+      await fetchFoodData()
+      return false
+    }
+  }, [isLoggedIn, user, sessionId, fetchFoodData])
+
+  const transferSessionCartToUser = useCallback(async () => {
+    const response = await apiFetch('/session-cart/transfer/', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok || !data.success) throw new Error(data.error || 'Could not safely transfer your guest cart.')
+  }, [sessionId])
+
+  const login = useCallback(async (userData, authToken) => {
+    if (!userData?.user_id || !authToken) throw new Error('The server did not return a valid sign-in session.')
+    // Store token before transferring the guest cart: apiFetch attaches it automatically.
+    localStorage.setItem('savoraToken', authToken)
     localStorage.setItem('user', JSON.stringify(userData))
     localStorage.setItem('isLoggedIn', 'true')
-
-    // Refresh food data so DB quantities (merged from session cart) show up
-    fetchFoodData()
-  }, [transferSessionCartToUser, fetchFoodData])
-
-  // ── Logout ──────────────────────────────────────────────────────────────────
-  const logout = useCallback(async () => {
-    if (!user) return
-
-    await clearCart()
-
     try {
-      await fetch(`http://localhost:3000/logout/${user.user_id}/`, { method: 'POST' })
+      await transferSessionCartToUser()
     } catch (error) {
-      console.error('Logout error:', error)
+      console.warn('Guest cart transfer did not fully complete:', error)
     }
+    setUser(userData)
+    setIsLoggedIn(true)
+    setFoodError('')
+  }, [transferSessionCartToUser])
 
+  const logout = useCallback(async () => {
+    if (user?.user_id) {
+      try {
+        await apiFetch(`/logout/${user.user_id}/`, { method: 'POST', body: JSON.stringify({}) })
+      } catch (error) {
+        console.warn('Server logout could not be reached:', error)
+      }
+    }
+    localStorage.removeItem('savoraToken')
     localStorage.removeItem('user')
     localStorage.removeItem('isLoggedIn')
     setUser(null)
     setIsLoggedIn(false)
+    setTogg(false)
     navigate('/')
-  }, [user, clearCart, navigate])
+  }, [user, navigate])
 
   const value = {
-    Quantity, setQuantity,
-    Togg, setTogg,
-    displayCart, setDisplayCart,
-    user, setUser,
-    isLoggedIn, setIsLoggedIn,
-    loading,
-    sessionId,
-    logout,
-    login,
-    updateQuantity,
-    foodData,
-    fetchFoodData,   // exposed so other components can manually refresh if needed
+    Togg, setTogg, user, setUser, isLoggedIn, setIsLoggedIn, loading,
+    sessionId, logout, login, updateQuantity, clearCart, foodData,
+    fetchFoodData, foodError, cartCount, displayCart,
   }
 
-  return (
-    <GlobalStateContext.Provider value={value}>
-      {children}
-    </GlobalStateContext.Provider>
-  )
+  return <GlobalStateContext.Provider value={value}>{children}</GlobalStateContext.Provider>
 }

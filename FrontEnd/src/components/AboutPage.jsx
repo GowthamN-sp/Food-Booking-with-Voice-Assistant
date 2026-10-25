@@ -1,104 +1,22 @@
-import React from 'react'
+import { Link } from 'react-router-dom'
+import { Mic, ShoppingCart, Utensils } from 'lucide-react'
 import './CSS/About.css'
 
-const AboutPage = () => {
-  return (
-    <div className="about-container">
-      <div className="about-header">
-        <h1>About EchoEats</h1>
-        <p>Voice Based Food Ordering System | Order with your voice, eat with pleasure</p>
-      </div>
-
-      <div className="about-content">
-        <div className="highlight-section">
-          <div className="highlight-badge">🚀 INNOVATION</div>
-          <h2 className="highlight-title">Voice Based Food Ordering System</h2>
-          <p className="highlight-description">
-            EchoEats introduces a revolutionary way to order food - just use your voice! 
-            Our advanced voice recognition technology allows you to browse menus, place orders, 
-            and track deliveries hands-free. Simply speak your cravings and we'll handle the rest.
-          </p>
-          <div className="voice-features">
-            <div className="voice-feature">
-              <span className="voice-icon">🎤</span>
-              <span>Hands-free ordering</span>
-            </div>
-            <div className="voice-feature">
-              <span className="voice-icon">🗣️</span>
-              <span>Multi-language support</span>
-            </div>
-            <div className="voice-feature">
-              <span className="voice-icon">⚡</span>
-              <span>Instant voice recognition</span>
-            </div>
-            <div className="voice-feature">
-              <span className="voice-icon">🔊</span>
-              <span>Voice confirmation</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="about-section">
-          <h2>Our Story</h2>
-          <p>
-            EchoEats was born from a simple idea: everyone deserves access to delicious, 
-            high-quality food delivered fast and fresh. What started as a small kitchen 
-            in 2020 has now grown into a trusted food delivery platform connecting 
-            customers with the best restaurants in town.
-          </p>
-        </div>
-
-        <div className="about-section">
-          <h2>Our Mission</h2>
-          <p>
-            To bring restaurant-quality meals to your doorstep with unprecedented speed 
-            and care. We believe that great food has the power to bring people together 
-            and make every moment special.
-          </p>
-        </div>
-
-        <div className="team-section">
-          {/* <h2>Meet Our Team</h2> */}
-          <div className="team-grid">
-            <div className="team-card lead">
-              <div className="team-icon">👨‍💻</div>
-              <h3>Gowtham N</h3>
-              <p className="team-role">Full Stack Developer</p>
-              <p className="team-dept">Computer Science Engineering</p>
-             
-              <p className="team-desc">
-                Leading the development of EchoEats with expertise in both frontend and backend technologies.
-                Implemented the voice recognition system and full stack architecture.
-              </p>
-            </div>
-
-           
-
-            
-          </div>
-        </div>
-
-        <div className="stats-section">
-          <div className="stat-item">
-            <h3>500+</h3>
-            <p>Restaurant Partners</p>
-          </div>
-          <div className="stat-item">
-            <h3>50k+</h3>
-            <p>Happy Customers</p>
-          </div>
-          <div className="stat-item">
-            <h3>20min</h3>
-            <p>Avg. Delivery Time</p>
-          </div>
-          <div className="stat-item">
-            <h3>4.8★</h3>
-            <p>Customer Rating</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+const AboutPage = () => (
+  <main className="about-container savora-about">
+    <section className="about-header">
+      <span className="savora-eyebrow">A BETTER WAY TO ORDER</span>
+      <h1>Meet Savora</h1>
+      <p>Good food. Your way. Browse the menu, manage your cart, and try voice-assisted ordering with Echo.</p>
+      <Link to="/"><button className="HeroButtonPrimary">Explore the menu →</button></Link>
+    </section>
+    <section className="about-content savora-about-grid">
+      <article className="about-section"><span className="savora-about-icon"><Utensils aria-hidden="true" /></span><h2>Discover your next favourite</h2><p>Explore the available menu, browse categories, and see item details and prices before adding dishes to your cart.</p></article>
+      <article className="about-section"><span className="savora-about-icon"><ShoppingCart aria-hidden="true" /></span><h2>Ordering made clearer</h2><p>Manage quantities, review your cart, and continue through the checkout experience supported by this project.</p></article>
+      <article className="about-section"><span className="savora-about-icon"><Mic aria-hidden="true" /></span><h2>Say hello to Echo</h2><p>Use the voice assistant to try supported commands for menu discovery and cart actions. Available commands depend on the assistant&apos;s current capabilities.</p></article>
+    </section>
+    <section className="about-section savora-story"><h2>Built around a simple idea</h2><p>Savora is a food-ordering project that brings together a React interface, a Django backend, and voice-assisted interaction. The goal is to make browsing and ordering feel straightforward, with a consistent experience from menu to cart.</p><p>Designed with care, improved through testing, and focused on making everyday food ordering easier.</p></section>
+  </main>
+)
 
 export default AboutPage

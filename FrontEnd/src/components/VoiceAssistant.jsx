@@ -1,347 +1,202 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { GlobalStateContext } from '../context/GlobalStateContext';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import './CSS/Voice.css';
+import { useState, useContext, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AlertCircle, Check, LoaderCircle, Mic, MicOff, Send, ShoppingBag, Volume2, X } from 'lucide-react'
+import { GlobalStateContext } from '../context/GlobalStateContext'
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
+import { apiFetch } from '../config'
+import { formatINR, toAmount } from '../utils/currency'
+import './CSS/Voice.css'
 
-const playAudioFromText = async (text) => {
-  const encodedText = encodeURIComponent(text);
-  const googleTTSUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=${encodedText}&tl=en/`;
-  const audio = new Audio(googleTTSUrl);
-  audio.crossOrigin = 'anonymous';
-  return new Promise((resolve, reject) => {
-    audio.onended = resolve;
-    audio.onerror = reject;
-    audio.play().catch(reject);
-  });
-};
+const normalise = value => String(value || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
 
 const VoiceAssistant = () => {
-  const navigate = useNavigate();
-  const { Togg, setTogg, updateQuantity, logout, login, foodData } = useContext(GlobalStateContext);
+  const navigate = useNavigate()
+  const { Togg, setTogg, updateQuantity, logout, foodData, isLoggedIn, user } = useContext(GlobalStateContext)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [responseText, setResponseText] = useState('I can help you find dishes, manage your cart, and navigate Savora.')
+  const [inputText, setInputText] = useState('')
+  const [error, setError] = useState('')
+  const [pendingCommand, setPendingCommand] = useState(null)
+  const [pendingPrompt, setPendingPrompt] = useState('')
+  const transcriptTimer = useRef(null)
+  const lastProcessed = useRef('')
+  const responseRef = useRef(null)
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition, isMicrophoneAvailable } = useSpeechRecognition()
 
-  const [isListening, setIsListening] = useState(false);
-  const [assistantResponse, setAssistantResponse] = useState('');
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [speechMethod, setSpeechMethod] = useState('native');
-  const [hasGreeted, setHasGreeted] = useState(false);
-  const [loginStep, setLoginStep] = useState(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [transcriptTimeout, setTranscriptTimeout] = useState(null);
-  const [processedCommands, setProcessedCommands] = useState([]);
+  const speak = useCallback((message) => {
+    setResponseText(message)
+    if (!('speechSynthesis' in window) || !message) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(message)
+    utterance.lang = 'en-IN'
+    utterance.rate = 0.95
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utterance)
+  }, [])
 
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } =
-    useSpeechRecognition();
+  const matchFood = useCallback((name) => {
+    const query = normalise(name)
+    if (!query) return null
+    const exact = foodData.filter(item => normalise(item.FoodName) === query)
+    if (exact.length === 1) return exact[0]
+    const partial = foodData.filter(item => normalise(item.FoodName).includes(query) || query.includes(normalise(item.FoodName)))
+    return partial.length === 1 ? partial[0] : null
+  }, [foodData])
 
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      const voices = speechSynthesis.getVoices();
-      setSpeechMethod(voices.length > 0 ? 'native' : 'google');
-    } else {
-      setSpeechMethod('google');
+  const executeCommand = useCallback(async (command) => {
+    if (command.command === 'FILTER') {
+      navigate('/')
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('savora:filter-category', { detail: { category: command.category } })), 150)
+      speak(`Showing ${command.category} dishes.`)
+      return
     }
-
-    if (!hasGreeted && !Togg) {
-      setTimeout(() => {
-        const greeting = "Hello! I am your voice assistant. How can I help you today?";
-        setAssistantResponse(greeting);
-        speakResponse(greeting);
-        setHasGreeted(true);
-      }, 1000);
-    }
-  }, []); 
-
-  // ── TTS ────────────────────────────────────────────────────────────────────
-  const speakResponse = useCallback(async (text) => {
-    setIsSpeaking(true);
-    try {
-      if (speechMethod === 'native') {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        utterance.lang = 'en-IN';
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => {
-          setIsSpeaking(false);
-          setSpeechMethod('google');
-          speakResponse(text);
-        };
-        window.speechSynthesis.speak(utterance);
-      } else {
-        await playAudioFromText(text).catch(console.error);
-        setIsSpeaking(false);
+    if (command.command === 'NAVIGATE') {
+      if (['/orders', '/profile'].includes(command.path) && !isLoggedIn) {
+        navigate('/login', { state: { from: { pathname: command.path } } })
+        speak('Please sign in first. I opened the sign-in page.')
+        return
       }
-    } catch {
-      setIsSpeaking(false);
+      navigate(command.path || '/')
+      if (command.path === '/#items') window.setTimeout(() => document.getElementById('items')?.scrollIntoView({ behavior: 'smooth' }), 180)
+      speak(command.response || 'Opening that page.')
+      return
     }
-  }, [speechMethod]);
-
-  const handleLogin = async (email, password) => {
-    try {
-      const res = await fetch('http://localhost:3000/login/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        login(data.user);
-        speakResponse('Login successful. How can I help you?');
-      } else {
-        speakResponse('Login failed. Please try again.');
+    if (command.command === 'ORDER' || command.command === 'REMOVE') {
+      if (!Array.isArray(command.items) || !command.items.length) { speak('Please tell me which dish you mean.'); return }
+      const changes = []
+      for (const requested of command.items) {
+        const food = matchFood(requested.name)
+        if (!food) { speak(`I couldn't uniquely identify ${requested.name}. Please say the exact dish name.`); return }
+        const qty = Math.max(1, Math.min(10, Number(requested.quantity) || 1))
+        const current = Math.max(0, Number(food.Quantity) || 0)
+        if (command.command === 'ORDER' && food.IsAvailable !== undefined && Number(food.IsAvailable) !== 1) { speak(`${food.FoodName} is currently unavailable.`); return }
+        if (command.command === 'REMOVE' && current === 0) { speak(`${food.FoodName} isn't in your cart.`); return }
+        changes.push({ food, quantity: command.command === 'REMOVE' ? -Math.min(qty, current) : qty })
       }
-    } catch {
-      speakResponse('Login failed. Please try again.');
+      for (const change of changes) {
+        const ok = await updateQuantity(change.food.FoodID, change.quantity)
+        if (!ok) { speak('I could not update every item. Please review your cart.'); return }
+      }
+      const summary = changes.map(change => `${Math.abs(change.quantity)} ${change.food.FoodName}`).join(' and ')
+      speak(command.command === 'ORDER' ? `Added ${summary} to your cart.` : `Removed ${summary} from your cart.`)
+      return
+    }
+    if (command.command === 'CART_SUMMARY') {
+      const inCart = foodData.filter(item => Number(item.Quantity) > 0)
+      if (!inCart.length) { speak('Your cart is empty. Ask me to find a dish or browse the menu.'); return }
+      const total = inCart.reduce((sum, item) => sum + (toAmount(item.Price) || 0) * (Number(item.Quantity) || 0), 0)
+      const details = inCart.map(item => `${item.Quantity} ${item.FoodName}`).join(', ')
+      speak(`Your cart has ${details}. The displayed subtotal is ${formatINR(total)}. The server confirms the payable amount at checkout.`)
+      return
+    }
+    if (command.command === 'ORDER_STATUS') {
+      if (!isLoggedIn || !user) { navigate('/login', { state: { from: { pathname: '/orders' } } }); speak('Please sign in to check your orders.'); return }
+      const res = await apiFetch(`/orders/${user.user_id}/`)
+      const orders = await res.json()
+      if (!res.ok || !Array.isArray(orders)) { speak('I could not retrieve your order status right now.'); return }
+      if (!orders.length) { speak('You have not placed an order yet.'); return }
+      const latest = orders[0]
+      speak(`Your latest order ${latest.order_id} is ${String(latest.order_status || 'being processed').replaceAll('-', ' ')}. Payment status: ${String(latest.payment_status || 'unknown').replaceAll('_', ' ')}.`)
+      return
+    }
+    if (command.command === 'LOGOUT') { await logout(); speak('You have signed out of Savora.'); return }
+    speak(command.response || 'I did not understand that. Try saying, find pizza, add one masala dosa, show my cart, or open orders.')
+  }, [navigate, speak, isLoggedIn, user, matchFood, updateQuantity, foodData, logout])
+
+  const processVoiceCommand = useCallback(async (text) => {
+    if (!text || isProcessing) return
+    setIsProcessing(true)
+    setError('')
+    try {
+      const response = await apiFetch('/voice/', { method: 'POST', body: JSON.stringify({ transcript: text }) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.aiResponse) throw new Error(data.error || 'Voice assistant request failed.')
+      const command = data.aiResponse
+      if (command.command === 'ORDER' || command.command === 'REMOVE') {
+        const totalRequested = (command.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+        if ((command.items || []).length > 1 || totalRequested > 3 || command.command === 'REMOVE' && totalRequested > 1) {
+          setPendingCommand(command)
+          setPendingPrompt((command.items || []).map(item => `${item.quantity} × ${item.name}`).join(', '))
+          speak(`Please confirm: ${command.command === 'ORDER' ? 'add' : 'remove'} ${(command.items || []).map(item => `${item.quantity} ${item.name}`).join(' and ')}?`)
+          return
+        }
+      }
+      await executeCommand(command)
+    } catch (err) {
+      setError(err.message || 'Echo could not connect. You can still use the menu and cart.')
+      speak('I could not process that request. Please try again or use the menu.')
     } finally {
-      setLoginStep(null);
-      setLoginEmail('');
+      setIsProcessing(false)
     }
-  };
-
-  const handleCommand = useCallback(async (commandData) => {
-    switch (commandData.command) {
-      case 'FILTER':
-        navigate('/');
-        setTimeout(() => {
-          document.getElementById('items')?.scrollIntoView({ behavior: 'smooth' });
-          setTimeout(() => {
-            const btns = document.querySelectorAll('.category-btn');
-            for (const btn of btns) {
-              if (btn.textContent === commandData.category) {
-                btn.click();
-                break;
-              }
-            }
-          }, 300);
-        }, 300);
-        break;
-
-      case 'NAVIGATE':
-        navigate(commandData.path);
-        if (commandData.path === '/#items') {
-          setTimeout(() => {
-            document.getElementById('items')?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
-        break;
-
-      case 'ORDER':
-        if (commandData.items?.length) {
-          for (const item of commandData.items) {
-            const foodItem = foodData.find(f =>
-              f.FoodName.toLowerCase().includes(item.name.toLowerCase())
-            );
-            if (foodItem) {
-              for (let i = 0; i < item.quantity; i++) {
-                await updateQuantity(foodItem.FoodID, 1);
-              }
-            }
-          }
-        }
-        break;
-
-      case 'REMOVE':
-        if (commandData.items?.length) {
-          for (const item of commandData.items) {
-            const foodItem = foodData.find(f =>
-              f.FoodName.toLowerCase().includes(item.name.toLowerCase())
-            );
-            if (foodItem) {
-              for (let i = 0; i < item.quantity; i++) {
-                await updateQuantity(foodItem.FoodID, -1);
-              }
-            }
-          }
-        }
-        break;
-
-      case 'LOGOUT':
-        await logout();
-        speakResponse('Logged out successfully');
-        break;
-
-      default:
-        break;
-    }
-  }, [navigate, foodData, updateQuantity, logout]);
-
-  const processVoiceCommand = useCallback(async (command) => {
-    setIsProcessing(true);
-    try {
-      const res = await fetch('http://localhost:3000/voice/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: command }),
-      });
-      const data = await res.json();
-
-      if (data.aiResponse) {
-        setAssistantResponse(data.aiResponse.response);
-        speakResponse(data.aiResponse.response);
-
-        if (data.aiResponse.command === 'NAVIGATE' && data.aiResponse.page === 'login') {
-          setLoginStep('awaiting_email');
-          speakResponse('Please say your email');
-        } else {
-          await handleCommand(data.aiResponse);
-        }
-      } else {
-        setAssistantResponse('Sorry, I encountered an error.');
-        speakResponse('Sorry, I encountered an error.');
-      }
-    } catch {
-      setAssistantResponse('Sorry, I could not connect to the server.');
-      speakResponse('Sorry, I could not connect to the server.');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [speakResponse, handleCommand]);
+  }, [executeCommand, isProcessing, speak])
 
   const processTranscript = useCallback(async (text) => {
-    if (!text || processedCommands.includes(text)) return;
-    setProcessedCommands(prev => [...prev, text]);
-
-    if (loginStep === 'awaiting_email') {
-      setLoginEmail(text);
-      setLoginStep('awaiting_password');
-      speakResponse('Please say your password');
-      return;
-    }
-    if (loginStep === 'awaiting_password') {
-      await handleLogin(loginEmail, text);
-      return;
-    }
-
-    await processVoiceCommand(text);
-  }, [processedCommands, loginStep, loginEmail, speakResponse, processVoiceCommand]);
+    const trimmed = String(text || '').trim()
+    if (!trimmed || trimmed === lastProcessed.current) return
+    lastProcessed.current = trimmed
+    await processVoiceCommand(trimmed)
+  }, [processVoiceCommand])
 
   useEffect(() => {
-    if (!transcript || !isListening) return;
-    if (transcriptTimeout) clearTimeout(transcriptTimeout);
+    if (!Togg || !transcript || !listening || isProcessing) return
+    if (transcriptTimer.current) window.clearTimeout(transcriptTimer.current)
+    transcriptTimer.current = window.setTimeout(() => {
+      SpeechRecognition.stopListening()
+      processTranscript(transcript)
+    }, 1200)
+    return () => { if (transcriptTimer.current) window.clearTimeout(transcriptTimer.current) }
+  }, [Togg, transcript, listening, isProcessing, processTranscript])
 
-    const timeout = setTimeout(() => processTranscript(transcript), 2000);
-    setTranscriptTimeout(timeout);
-
-    return () => clearTimeout(timeout);
-  }, [transcript, isListening]); 
-
-  useEffect(() => {
-    if (!listening && transcript && isListening) {
-      const timer = setTimeout(stopListening, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [listening, transcript, isListening]); 
+  useEffect(() => () => {
+    if (transcriptTimer.current) window.clearTimeout(transcriptTimer.current)
+    window.speechSynthesis?.cancel()
+    SpeechRecognition.stopListening()
+  }, [])
 
   const startListening = () => {
-    window.speechSynthesis?.cancel();
-    setIsSpeaking(false);
-    setIsListening(true);
-    resetTranscript();
-    SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
-  };
-
-  const stopListening = () => {
-    setIsListening(false);
-    SpeechRecognition.stopListening();
-    if (transcript && !processedCommands.includes(transcript)) {
-      processTranscript(transcript);
-    }
-  };
-
-  const openAssistant = () => setTogg(true);
-
-  const closeAssistant = () => {
-    window.speechSynthesis?.cancel();
-    setTogg(false);
-    setIsListening(false);
-    setAssistantResponse('');
-    setProcessedCommands([]);
-    setLoginStep(null);
-    setLoginEmail('');
-    resetTranscript();
-  };
-
-  if (!Togg) {
-    return (
-      <div className="voice-assistant-floating">
-        <button className="floating-voice-button" onClick={openAssistant} title="Open Voice Assistant">
-          <span className="mic-icon">🎤</span>
-          {isSpeaking && <span className="floating-pulse"></span>}
-        </button>
-        {isSpeaking && <div className="floating-speaking-indicator">🔊 Speaking...</div>}
-      </div>
-    );
+    setError('')
+    if (!browserSupportsSpeechRecognition) { setError('Speech recognition is not supported in this browser. Try the text command box or use Chrome.'); return }
+    if (isMicrophoneAvailable === false) { setError('Microphone permission is unavailable. Check your browser permissions or use text input.'); return }
+    lastProcessed.current = ''
+    resetTranscript()
+    window.speechSynthesis?.cancel()
+    setIsSpeaking(false)
+    try { SpeechRecognition.startListening({ continuous: true, language: 'en-IN' }) }
+    catch { setError('Could not start the microphone. Check browser permissions and try again.') }
   }
 
+  const submitText = async event => {
+    event.preventDefault()
+    const text = inputText.trim()
+    if (!text || isProcessing) return
+    setInputText('')
+    await processVoiceCommand(text)
+  }
+
+  const confirmPending = async confirmed => {
+    const command = pendingCommand
+    setPendingCommand(null)
+    setPendingPrompt('')
+    if (!confirmed || !command) { speak('Okay, I did not change your cart.'); return }
+    await executeCommand(command)
+  }
+
+  if (!Togg) return <div className="voice-assistant-floating"><button type="button" className="floating-voice-button" onClick={() => setTogg(true)} title="Open Echo by Savora" aria-label="Open Echo by Savora"><Mic className="mic-icon" aria-hidden="true" /></button></div>
+
   return (
-    <div className="voice-assistant-panel">
-      <div className="voice-header">
-        <h3>🎤 Voice Assistant</h3>
-        {speechMethod === 'google' && (
-          <p className="voice-subtitle">(Using Google TTS)</p>
-        )}
-      </div>
+    <aside className="voice-assistant-panel savora-voice-panel" aria-label="Echo voice assistant">
+      <div className="voice-header"><div className="voice-header-icon"><Mic size={19} aria-hidden="true" /></div><div><h3>Echo <span>by Savora</span></h3><p className="voice-subtitle">Voice-powered food assistant</p></div><button type="button" className="voice-close-button" onClick={() => { setTogg(false); SpeechRecognition.stopListening(); window.speechSynthesis?.cancel(); setIsSpeaking(false); setPendingCommand(null) }} aria-label="Close Echo"><X size={18} /></button></div>
+      <div className="voice-status" role="status">{isProcessing ? <><LoaderCircle size={16} className="voice-spin" /> Understanding your request…</> : listening ? <><span className="voice-status-dot" /> Listening in English (India)…</> : isSpeaking ? <><Volume2 size={16} /> Speaking…</> : <><span className="voice-status-dot idle" /> Ready when you are</>}</div>
+      <div className="voice-conversation"><div className="assistant-message"><span className="assistant-message-label">ECHO</span><p ref={responseRef}>{responseText}</p></div>{transcript && <div className="user-transcript"><span>YOU SAID</span><p>{transcript}</p></div>}</div>
+      {error && <div className="voice-error" role="alert"><AlertCircle size={16} />{error}</div>}
+      {pendingCommand && <div className="voice-confirm-box"><p>Confirm cart change: <strong>{pendingPrompt}</strong></p><div><button type="button" onClick={() => confirmPending(true)}><Check size={15} /> Confirm</button><button type="button" onClick={() => confirmPending(false)}><X size={15} /> Cancel</button></div></div>}
+      <div className="voice-examples"><span>TRY SAYING</span><button type="button" onClick={() => processVoiceCommand('Find pizza')}>Find pizza</button><button type="button" onClick={() => processVoiceCommand('Add one masala dosa')}>Add one masala dosa</button><button type="button" onClick={() => processVoiceCommand('Show my cart total')}>Cart total</button></div>
+      <div className="voice-controls"><button type="button" className={`listen-button ${listening ? 'listening' : ''}`} onClick={() => listening ? SpeechRecognition.stopListening() : startListening()} disabled={isProcessing || Boolean(pendingCommand)}>{listening ? <MicOff size={18} /> : <Mic size={18} />}{listening ? 'Stop listening' : 'Start speaking'}</button><form className="voice-text-form" onSubmit={submitText}><input type="text" value={inputText} onChange={event => setInputText(event.target.value)} placeholder="Or type a command…" aria-label="Type a voice assistant command" maxLength={500} /><button type="submit" aria-label="Send command" disabled={isProcessing || !inputText.trim()}><Send size={17} /></button></form><button type="button" className="voice-cart-link" onClick={() => { navigate('/cart'); setTogg(false) }}><ShoppingBag size={16} /> Open cart</button></div>
+    </aside>
+  )
+}
 
-      <div className="voice-controls">
-        <button
-          className={`listen-button ${isListening ? 'listening' : ''}`}
-          onClick={isListening ? stopListening : startListening}
-          disabled={isProcessing}
-        >
-          {isListening ? (
-            <><span className="pulse-icon"></span>Listening... Click to Stop</>
-          ) : isProcessing ? 'Processing...' : '🎤 Start Voice Command'}
-        </button>
-
-        {isListening && (
-          <div className="listening-indicator">
-            <div className="sound-wave">
-              {[...Array(5)].map((_, i) => <div key={i} className="bar"></div>)}
-            </div>
-            <span>Speak now...</span>
-          </div>
-        )}
-
-        {isProcessing && (
-          <div className="processing-indicator">
-            <div className="spinner"></div>
-            Processing your command...
-          </div>
-        )}
-      </div>
-
-      {transcript && (
-        <div className="voice-transcript">
-          <div className="transcript-label">You said:</div>
-          <div className="transcript-text">"{transcript}"</div>
-        </div>
-      )}
-
-      {assistantResponse && (
-        <div className="assistant-response">
-          <div className="response-label">Assistant:</div>
-          <div className="response-text">{assistantResponse}</div>
-          {isSpeaking && (
-            <div className="speaking-indicator">
-              <span className="sound-icon">🔊</span>
-              {speechMethod === 'google' ? 'Playing...' : 'Speaking...'}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="voice-tips">
-        <small>
-          💡 <strong>Try saying:</strong> "Go to menu", "Show pizzas", "Add 3 burgers", "Go to cart", "Login", "Logout"
-        </small>
-      </div>
-
-      <button className="close-button" onClick={closeAssistant}>✕</button>
-    </div>
-  );
-};
-
-export default VoiceAssistant;
+export default VoiceAssistant

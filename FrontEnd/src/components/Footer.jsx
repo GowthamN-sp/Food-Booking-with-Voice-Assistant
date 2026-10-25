@@ -1,60 +1,23 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowUpRight, Mic, ShoppingBag, Utensils } from 'lucide-react'
 import './CSS/Footer.css'
 
-const Footer = () => {
-  return (
-    <div className='outerFooter'>
-        <div className='Footer'>
-            <div className='FooterContent'>
-                <div className='FooterSection'>
-                    <h3>About EchoEats</h3>
-                    <ul>
-                        <li><Link to="/about">Our Story</Link></li>
-                        <li><Link to="/careers">Careers</Link></li>
-                        <li><Link to="/press">Press</Link></li>
-                        <li><Link to="/blog">Blog</Link></li>
-                    </ul>
-                </div>
-                
-                <div className='FooterSection'>
-                    <h3>Quick Links</h3>
-                    <ul>
-                        <li><Link to="/home">Home</Link></li>
-                        <li><Link to="/menu">Menu</Link></li>
-                        <li><Link to="/offers">Login/SignUp</Link></li>
-                        <li><Link to="/contact">Contact Us</Link></li>
-                    </ul>
-                </div>
-                
-                <div className='FooterSection'>
-                    <h3>Support</h3>
-                    <ul>
-                        <li><Link to="/faq">FAQ</Link></li>
-                        <li><Link to="/terms">Terms of Service</Link></li>
-                        <li><Link to="/privacy">Privacy Policy</Link></li>
-                        <li><Link to="/help">Help Center</Link></li>
-                    </ul>
-                </div>
-                
-                <div className='FooterSection'>
-                    <h3>Follow Us</h3>
-                    <div className='SocialIcons'>
-                        <a href="https://www.facebook.com/vamshidu10/" target="_blank" rel="noopener noreferrer">FB</a>
-                        <a href="https://x.com/vamshitwts" target="_blank" rel="noopener noreferrer">TW</a>
-                        <a href="https://www.instagram.com/vamshidu/" target="_blank" rel="noopener noreferrer">IG</a>
-                        <a href="https://www.linkedin.com/in/duvamshi/
-                        " target="_blank" rel="noopener noreferrer">LI</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div className='FooterBottom'>
-                <p>&copy; 2026 EchoEats. All rights reserved. | Designed with ❤️ for food lovers</p>
-            </div>
-        </div>
+const Footer = () => (
+  <footer className="outerFooter savora-footer">
+    <div className="Footer">
+      <div className="footer-brand-block">
+        <Link to="/" className="savora-wordmark" aria-label="Savora home">Savora<span>.</span></Link>
+        <p>Good food. Your way. Browse the menu, place an order, or let Echo help you find your next favourite.</p>
+        <span className="footer-assistant-note"><Mic size={16} aria-hidden="true" /> Meet Echo by Savora</span>
+      </div>
+      <div className="FooterContent">
+        <section className="FooterSection"><h3>Discover</h3><ul><li><Link to="/#items"><Utensils size={15} aria-hidden="true" /> Menu</Link></li><li><Link to="/about">About Savora</Link></li><li><Link to="/cart"><ShoppingBag size={15} aria-hidden="true" /> Your cart</Link></li></ul></section>
+        <section className="FooterSection"><h3>Your account</h3><ul><li><Link to="/login">Sign in / Sign up</Link></li><li><Link to="/orders">My orders</Link></li><li><Link to="/profile">Profile</Link></li></ul></section>
+        <section className="FooterSection"><h3>Project information</h3><ul><li><a href="https://razorpay.com/docs/" target="_blank" rel="noreferrer">Payment help <ArrowUpRight size={14} aria-hidden="true" /></a></li><li><a href="https://www.djangoproject.com/" target="_blank" rel="noreferrer">Built with Django <ArrowUpRight size={14} aria-hidden="true" /></a></li></ul></section>
+      </div>
+      <div className="FooterBottom"><p>© {new Date().getFullYear()} Savora. A food-ordering project with voice-assisted interaction.</p><p>Prices are shown in Indian rupees (₹).</p></div>
     </div>
-  )
-}
+  </footer>
+)
 
 export default Footer

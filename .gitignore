@@ -1,5 +1,32 @@
+# Secrets and local environment
 .env
-venv/
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+env/
+
+# JavaScript
+node_modules/
+dist/
+
+# Local editor / OS
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# Logs and coverage
+*.log
+coverage/
+
+# Patch safety backups
+.savora-patch-backups/

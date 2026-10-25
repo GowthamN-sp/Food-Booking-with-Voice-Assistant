@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <ellipse cx="400" cy="350" rx="255" ry="170" fill="#ffffff" stroke="#2a211d" stroke-width="8"/>
+        <circle cx="320" cy="325" r="75" fill="#d75e40"/><circle cx="465" cy="300" r="70" fill="#f0b447"/><circle cx="495" cy="400" r="62" fill="#4f8f5b"/>
+        <circle cx="340" cy="410" r="54" fill="#e7a45d"/><path d="M245 270 Q320 225 395 270 Q380 310 320 315 Q260 310 245 270Z" fill="#f6d57b"/>
+        <circle cx="315" cy="305" r="9" fill="#fff"/><circle cx="470" cy="282" r="8" fill="#fff"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Freshly made for you</text>
+    </svg>

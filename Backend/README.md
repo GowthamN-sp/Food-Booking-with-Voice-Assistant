@@ -1,352 +1,75 @@
-# EchoEats - Voice Assistant Django Backend
+# Savora Django API
 
-A sophisticated Django REST API for the EchoEats voice-controlled food ordering application with Groq AI integration and Razorpay payment processing.
+Backend for the Savora food-ordering portfolio application. The API uses Django, MySQL, signed expiring bearer tokens, a Groq-compatible OpenAI client for optional voice intent parsing, and Razorpay for online payments.
 
-## 🔐 Security Features
+## Prerequisites
 
-✅ **Secrets Management**: All sensitive credentials are stored in `.env` files (not tracked by Git)
-✅ **Environment Variables**: Industry-standard configuration management using `python-dotenv`
-✅ **API Keys Secured**: Groq, Razorpay credentials completely removed from source code
-✅ **Database Credentials**: MySQL credentials loaded from environment
-✅ **Production Ready**: Proper security headers and configuration best practices
+- Python 3.11 or 3.12
+- MySQL 8.x (or a compatible MySQL deployment)
+- Node.js/npm for the separate Vite frontend
+- Razorpay Test Mode credentials only for payment testing
 
-## 📋 Prerequisites
+## Local setup on Windows PowerShell
 
-- Python 3.8+
-- MySQL 5.7+
-- pip (Python package manager)
-- Git
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/ECHO_EATS_VOICE_ASSISTANT_DJANGO.git
-cd FoodApp/Backend
-```
-
-### 2. Create Virtual Environment
-
-```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
+Copy-Item .env.example .env
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-### 4. Configure Environment Variables
+Edit `.env` with the generated `DJANGO_SECRET_KEY`, local MySQL credentials, and exact frontend origin. Keep `DEBUG=True` only for local development. `.env` is ignored by Git and must never be committed.
 
-**CRITICAL: This step must be completed before running the application**
+## Existing database and schema
 
-```bash
-# Copy the example environment file
-cp .env.example .env
+This project started with legacy MySQL tables. The Django model declarations remain `managed = False` to avoid accidentally replacing existing data. Before using this patch with your database:
+
+1. Back up the database.
+2. Inspect table/column names in the backup and confirm `users`, `FoodItems`, and `orders` match the expected legacy schema.
+3. Run `python manage.py migrate_savora_schema`.
+4. Run `python manage.py check` and `python manage.py test app`.
+5. Check `http://localhost:8000/health/`; proceed only if it returns `status: ok` and `schemaReady: true`.
+
+The compatibility migration adds required columns and cart storage, and attempts to backfill order ownership only when it can read a `user_id` from legacy `customer_details`. Review unowned legacy orders manually. Do not run a production migration without a verified backup.
+
+## Menu pricing
+
+Run `python manage.py update_savora_market_prices` to preview indicative demo prices. It does not write changes unless `--apply` is supplied. These values are not live market quotes or a profitability calculation: validate the actual dish/portion, supplier costs, taxes and delivery-platform commission. Unclassified items remain unchanged for manual review. Back up the database and approve every proposed value before running `python manage.py update_savora_market_prices --apply`.
+
+## Run the API
+
+```powershell
+python manage.py runserver 127.0.0.1:8000
 ```
 
-**Edit `.env` and add your actual credentials:**
-
-```env
-# Django Settings
-DJANGO_SECRET_KEY=your-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database
-DB_NAME=voiceassistant
-DB_USER=root
-DB_PASSWORD=your-database-password
-DB_HOST=localhost
-DB_PORT=3306
-
-# Groq API (Voice AI)
-GROQ_API_KEY=your-groq-api-key
-
-# Razorpay Payment
-RAZORPAY_KEY_ID=your-razorpay-key-id
-RAZORPAY_KEY_SECRET=your-razorpay-secret-key
-
-# CORS Settings
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-```
-
-### 5. Run Database Migrations
-
-```bash
-python manage.py migrate
-```
-
-### 6. Start Development Server
-
-```bash
-python manage.py runserver 8000
-```
-
-The API will be available at: `http://localhost:8000`
-
-## 📖 API Endpoints
-
-### Food Items
-- `GET /api/food-items` - Get all food items
-- `POST /api/update-quantity/<id>/` - Update item quantity
-
-### Voice Processing
-- `POST /api/process-voice/` - Process voice commands
-
-### User Management
-- `POST /api/login/` - User login
-- `POST /api/signup/` - User registration
-- `POST /api/logout/<user_id>/` - User logout
-
-### Orders
-- `POST /api/create-order/` - Create new order
-- `POST /api/verify-payment/` - Verify payment
-- `GET /api/user-orders/<user_id>/` - Get user orders
-- `POST /api/update-order-status/<order_id>/` - Update order status
-
-### Cart
-- `POST /api/session-cart/` - Update session cart
-- `GET /api/session-cart/<session_id>/` - Get session cart items
-- `DELETE /api/session-cart/<session_id>/` - Clear session cart
-
-## 🔑 Getting API Keys
-
-### Groq API Key
-1. Visit: https://console.groq.com
-2. Sign up or log in
-3. Create an API key
-4. Copy and paste into `.env`
-
-### Razorpay Keys
-1. Visit: https://dashboard.razorpay.com
-2. Go to Settings → API Keys
-3. Copy Key ID and Key Secret
-4. Add to `.env`
-
-## 🏗️ Project Structure
-
-```
-Backend/
-├── Backend/
-│   ├── settings.py          # Django settings (uses environment variables)
-│   ├── urls.py              # URL routing
-│   └── wsgi.py              # WSGI configuration
-├── app/
-│   ├── models.py            # Database models
-│   ├── views.py             # API views
-│   ├── urls.py              # App-specific URLs
-│   └── migrations/          # Database migrations
-├── manage.py                # Django management
-├── requirements.txt         # Python dependencies
-├── .env.example             # Environment variables template
-├── .gitignore               # Git ignore rules
-└── README.md                # This file
-```
-
-## 🔒 Security Best Practices
-
-### Never Commit `.env`
-The `.env` file contains sensitive credentials and is protected by `.gitignore`. **Never** commit this file to version control.
-
-```bash
-# Verify .env is not tracked:
-git status
-# Should NOT show .env in changes
-```
-
-### Environment Variables Used
-- `DJANGO_SECRET_KEY` - Django's secret key for cryptographic signing
-- `DEBUG` - Set to `False` in production
-- `DB_PASSWORD` - Database password
-- `GROQ_API_KEY` - Groq AI API key
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` - Payment gateway credentials
-
-### Production Deployment
-For production:
-
-```env
-DEBUG=False
-DJANGO_SECRET_KEY=generate-with-django-secret-key-generator
-SECURE_SSL_REDIRECT=True
-SESSION_COOKIE_SECURE=True
-CSRF_COOKIE_SECURE=True
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-python manage.py test
-
-# Run specific test
-python manage.py test app.tests.YourTestCase
-
-# With coverage
-coverage run --source='.' manage.py test
-coverage report
-```
-
-## 📦 Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Django | 6.0.4 | Web framework |
-| djangorestframework | 3.14.0 | REST API |
-| django-cors-headers | 4.3.1 | CORS support |
-| mysqlclient | 2.2.1 | MySQL driver |
-| groq | 0.4.2 | Groq AI API |
-| razorpay | 1.4.1 | Payment processing |
-| python-dotenv | 1.2.2 | Environment variables |
-| openai | 1.3.0 | OpenAI/Groq compatibility |
-
-## 🐛 Troubleshooting
-
-### "ModuleNotFoundError: No module named 'dotenv'"
-```bash
-pip install python-dotenv
-```
-
-### "No module named 'groq'"
-```bash
-pip install groq
-```
-
-### Database Connection Error
-- Verify MySQL is running
-- Check DB credentials in `.env`
-- Ensure database exists: `CREATE DATABASE voiceassistant;`
-
-### CORS Errors
-- Verify `CORS_ALLOWED_ORIGINS` in `.env` includes your frontend URL
-- Frontend should be running on `http://localhost:3000` or `http://localhost:5173`
-
-### Groq API Key Error
-- Verify `GROQ_API_KEY` is correctly set in `.env`
-- Ensure the key is valid at: https://console.groq.com
-
-## 🚢 Deployment
-
-### Docker
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-```
-
-### Environment Variables on Deployment
-Set environment variables through your hosting platform:
-- Heroku: Use Config Vars
-- AWS: Use Parameter Store or Secrets Manager
-- Azure: Use Key Vault
-- DigitalOcean: Use App Platform Environment Variables
-
-## 📝 Git Workflow
-
-After making changes:
-
-```bash
-# Check status
-git status
-
-# Verify .env is NOT listed
-# If .env appears, it means .gitignore is not working properly
-
-# Add changes
-git add .
-
-# Commit
-git commit -m "Fix: Remove hardcoded secrets and implement environment variables"
-
-# Push
-git push origin main
-```
-
-## 🔄 Migration Guide
-
-If you're migrating from hardcoded secrets:
-
-1. ✅ Update all settings files to use `os.getenv()`
-2. ✅ Create `.env.example` with placeholder values
-3. ✅ Add `.env` to `.gitignore`
-4. ✅ Update all developers to copy `.env.example` to `.env`
-5. ✅ Remove all hardcoded credentials from Git history (see below)
-
-### Remove Secrets from Git History
-If secrets were already committed:
-
-```bash
-# Warning: This rewrites history for all users
-# Option 1: Using git-filter-repo (recommended)
-pip install git-filter-repo
-git filter-repo --invert-paths --paths .env
-
-# Option 2: Force push (nuclear option)
-git push --force-with-lease
-```
-
-**After removing secrets from history:**
-- All team members must refetch: `git fetch --all && git reset --hard`
-- Regenerate all compromised API keys
-- Notify your security team
-
-## 📚 Resources
-
-- [Django Documentation](https://docs.djangoproject.com/)
-- [Groq API Docs](https://console.groq.com/docs)
-- [Razorpay Integration](https://razorpay.com/docs/)
-- [python-dotenv](https://python-dotenv.readthedocs.io/)
-- [12-Factor App - Config](https://12factor.net/config)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Make changes
-4. Commit: `git commit -m "Add amazing feature"`
-5. Push: `git push origin feature/amazing-feature`
-6. Open Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see LICENSE file for details.
-
-## ⚠️ Security Notice
-
-**DO NOT:**
-- Commit `.env` files
-- Hardcode API keys in source code
-- Share credentials in pull requests or issues
-- Use test credentials in production
-
-**DO:**
-- Use environment variables for all secrets
-- Rotate API keys regularly
-- Review `.gitignore` before committing
-- Report security issues privately
-
-## 📞 Support
-
-For issues and questions:
-- GitHub Issues: [Report a bug](https://github.com/yourusername/ECHO_EATS_VOICE_ASSISTANT_DJANGO/issues)
-- Email: support@echorats.com
-
----
-
-**Last Updated**: 2026-06-09
-**Status**: ✅ Production Ready | 🔐 GitHub Safe | 🛡️ Security Verified
+## Main endpoints
+
+- `GET /` — menu with caller-specific cart quantities
+- `GET /health/` — database/schema readiness probe
+- `POST /signup/`, `POST /login/`, `POST /logout/<user_id>/` — account session endpoints
+- `POST /session-cart/`, `GET /session-cart/<session_id>/`, `DELETE /session-cart/clear/<session_id>/` — guest/account cart operations
+- `POST /session-cart/transfer/` — atomically merge a guest cart after authentication
+- `POST /update-quantity/<food_id>/` — authenticated cart update
+- `POST /create-order/` — create order from product IDs and quantities; server calculates prices
+- `POST /verify-payment/` — verify the Razorpay payment against the saved order
+- `POST /razorpay/webhook/` — verify and reconcile Razorpay events
+- `GET /orders/<user_id>/` — authenticated owner's orders
+- `POST /update-order-status/<order_id>/` — admin-email-restricted fulfillment update
+- `POST /voice/` — validated voice command interpretation; rule-based fallback works without Groq
+
+## Security notes
+
+- API auth uses a signed, expiring bearer token; logout increments a token version to revoke older tokens. This is a compact legacy-compatible approach, not a substitute for a full security review.
+- The compatibility migration hashes legacy plaintext password values in-place; the existing login code retains a fallback for recovery if migration has not completed. Remove that fallback once all account records are confirmed migrated.
+- Set `SAVORA_ADMIN_EMAILS` only to trusted, controlled email addresses.
+- Keep Razorpay Key Secret and webhook secret on the backend, never in `VITE_*` variables.
+- Rate-limit login/signup and voice endpoints at the reverse proxy/host. Use HTTPS, exact `ALLOWED_HOSTS`, exact `CORS_ALLOWED_ORIGINS`, secure deployment settings, database backups and monitoring.
+- Do not accept a payment as successful based only on a frontend callback. Verify the signature, saved gateway order, amount/currency and captured status; configure signed webhooks in Razorpay Test Mode.
+
+## Deployment
+
+Set environment variables in the host dashboard, including `DJANGO_SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, DB settings, and optional Groq/Razorpay settings. Run with a WSGI server from this directory, e.g. `gunicorn Backend.wsgi:application --bind 0.0.0.0:${PORT:-8000}`. Use the platform's supported way to schedule `python manage.py expire_savora_pending_orders --minutes 30` every 10 minutes so abandoned payment reservations do not remain indefinitely.
+
+**Release status:** source repairs and static Python syntax checks do not prove deployment readiness. Test against a backup/restored MySQL database and Razorpay Test Mode before deploying or accepting real payments.

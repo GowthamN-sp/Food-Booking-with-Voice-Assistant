@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <path d="M250 250 Q400 195 550 250 L520 420 Q400 475 280 420Z" fill="#7c4a37" stroke="#2a211d" stroke-width="8"/>
+        <path d="M280 250 Q400 220 520 250 Q490 315 400 330 Q310 315 280 250Z" fill="#c97b54"/>
+        <circle cx="350" cy="350" r="16" fill="#ffcf73"/><circle cx="445" cy="370" r="14" fill="#ffcf73"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Gulab Jamun</text>
+    </svg>

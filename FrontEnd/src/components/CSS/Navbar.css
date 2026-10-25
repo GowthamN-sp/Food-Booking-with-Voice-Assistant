@@ -20,7 +20,7 @@
     top: 1.5px;
 }
 
-img{
+.LogoImage img{
     border-radius: 50%;
     height: 50px;
 }
@@ -87,6 +87,7 @@ img{
     transition: all 0.3s ease;
     border: 2px solid #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    padding: 0;
 }
 
 .profile-circle:hover {
@@ -133,6 +134,15 @@ img{
     transition: all 0.2s ease;
     cursor: pointer;
     font-size: 14px;
+}
+
+.profile-dropdown button.dropdown-item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
 }
 
 .dropdown-item:hover {

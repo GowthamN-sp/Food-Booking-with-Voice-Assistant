@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <ellipse cx="400" cy="220" rx="230" ry="90" fill="#e6a45b" stroke="#2a211d" stroke-width="8"/>
+        <path d="M176 220 Q400 165 624 220 L610 275 Q400 320 190 275 Z" fill="#ffd27a"/>
+        <rect x="190" y="274" width="420" height="60" rx="24" fill="#4f8f5b"/>
+        <rect x="210" y="332" width="380" height="70" rx="18" fill="#d6533c"/>
+        <rect x="185" y="400" width="430" height="58" rx="20" fill="#e6a45b"/>
+        <circle cx="300" cy="205" r="7" fill="#2a211d"/><circle cx="370" cy="190" r="7" fill="#2a211d"/><circle cx="445" cy="205" r="7" fill="#2a211d"/><circle cx="510" cy="190" r="7" fill="#2a211d"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Crispy Chicken Burger</text>
+    </svg>

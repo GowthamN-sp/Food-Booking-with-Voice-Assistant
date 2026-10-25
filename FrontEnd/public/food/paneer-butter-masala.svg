@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <path d="M195 250 Q400 160 605 250 L575 455 Q400 530 225 455 Z" fill="#ffffff" stroke="#2a211d" stroke-width="8"/>
+        <path d="M220 275 Q400 205 580 275 Q540 400 400 420 Q260 400 220 275Z" fill="#f1cf6a"/>
+        <path d="M240 300 Q300 260 355 320 T470 315 T555 300" fill="none" stroke="#c8792f" stroke-width="14"/>
+        <circle cx="300" cy="350" r="28" fill="#a75e3d"/><circle cx="455" cy="350" r="30" fill="#a75e3d"/><circle cx="395" cy="285" r="22" fill="#4f8f5b"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Paneer Butter Masala</text>
+    </svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <rect x="220" y="190" width="360" height="300" rx="55" fill="#f4d39b" stroke="#2a211d" stroke-width="8"/>
+        <path d="M270 420 Q250 320 315 250 Q390 190 470 240 Q545 290 520 420Z" fill="#c85f39"/>
+        <circle cx="330" cy="310" r="22" fill="#f2c34f"/><circle cx="410" cy="275" r="20" fill="#4f8f5b"/><circle cx="455" cy="355" r="24" fill="#f2c34f"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Paneer Tikka</text>
+    </svg>

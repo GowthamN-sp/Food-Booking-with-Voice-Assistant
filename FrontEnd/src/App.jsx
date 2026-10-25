@@ -1,4 +1,3 @@
-import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { GlobalStateProvider } from './context/GlobalStateContext'
 import Navbar from './components/Navbar'

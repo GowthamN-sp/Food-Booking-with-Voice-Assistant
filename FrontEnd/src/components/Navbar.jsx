@@ -1,80 +1,40 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom';
+import { useContext, useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
+import { ClipboardList, LogOut, Menu, ShoppingBag, UserRound, X } from 'lucide-react'
 import './CSS/Navbar.css'
 import { GlobalStateContext } from '../context/GlobalStateContext'
-import { useContext } from 'react';
 
 const Navbar = () => {
-  const { displayCart, isLoggedIn, user, logout } = useContext(GlobalStateContext)
+  const { isLoggedIn, user, logout, cartCount } = useContext(GlobalStateContext)
   const [showDropdown, setShowDropdown] = useState(false)
-  
-  const getInitials = () => {
-    if (!user || !user.name) return '?'
-    const names = user.name.split(' ')
-    if (names.length > 1) {
-      return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase()
-    }
-    return user.name.slice(0, 2).toUpperCase()
-  }
-
-  const handleLogout = () => {
-    setShowDropdown(false)
-    logout()
-  }
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const getInitials = () => user?.name?.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join('').toUpperCase() || '?'
+  const closeMenus = () => { setShowDropdown(false); setMobileOpen(false) }
 
   return (
-    <div className='outerNavbar'>
-        <div className='Navbar'>
-            <div className='LogoImage'>
-                <img src="ECHOEATS.png" alt="" />
+    <header className="outerNavbar">
+      <nav className="Navbar" aria-label="Main navigation">
+        <Link to="/" className="savora-wordmark" aria-label="Savora home" onClick={closeMenus}>Savora<span>.</span></Link>
+        <button type="button" className="mobile-nav-toggle" onClick={() => setMobileOpen(v => !v)} aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen}>{mobileOpen ? <X /> : <Menu />}</button>
+        <div className={`NavButtons ${mobileOpen ? 'is-open' : ''}`}>
+          <NavLink to="/" end className={({isActive}) => `navbut ${isActive ? 'active' : ''}`} onClick={closeMenus}>Home</NavLink>
+          <NavLink to="/#items" className="navbut" onClick={closeMenus}>Menu</NavLink>
+          <NavLink to="/about" className={({isActive}) => `navbut ${isActive ? 'active' : ''}`} onClick={closeMenus}>About</NavLink>
+          <Link to="/cart" className="navbut cart-nav-link" onClick={closeMenus}><ShoppingBag size={17} aria-hidden="true" /> Cart <span className="cart-nav-count">{cartCount || 0}</span></Link>
+          {isLoggedIn ? (
+            <div className="user-profile">
+              <button type="button" className="profile-circle" onClick={() => setShowDropdown(v => !v)} aria-label="Toggle profile menu" aria-expanded={showDropdown}>{getInitials()}</button>
+              {showDropdown && <div className="profile-dropdown">
+                <div className="dropdown-user-summary"><strong>{user?.name}</strong><small>{user?.email}</small></div>
+                <Link to="/profile" className="dropdown-item" onClick={closeMenus}><UserRound size={18} aria-hidden="true" /> Profile</Link>
+                <Link to="/orders" className="dropdown-item" onClick={closeMenus}><ClipboardList size={18} aria-hidden="true" /> My orders</Link>
+                <button type="button" className="dropdown-item logout" onClick={() => { closeMenus(); logout() }}><LogOut size={18} aria-hidden="true" /> Sign out</button>
+              </div>}
             </div>
-            <div className='NavButtons'>
-                <Link to="/"><button className='navbut'>Home</button></Link>
-                <Link to="/about"><button className='navbut'>About</button></Link>
-                {isLoggedIn && (
-                  <Link to="/orders"><button className='navbut'>Orders</button></Link>
-                )}
-                {displayCart && (
-                  <Link to="/cart"><button className='navbut'>Cart</button></Link>
-                )}
-                
-                {isLoggedIn ? (
-                  <div className="user-profile">
-                    <div 
-                      className="profile-circle" 
-                      onClick={() => setShowDropdown(!showDropdown)}
-                    >
-                      {getInitials()}
-                    </div>
-                    
-                    {showDropdown && (
-                      <div className="profile-dropdown">
-                        <Link to="/profile" onClick={() => setShowDropdown(false)}>
-                          <div className="dropdown-item">
-                            <span className="dropdown-icon">👤</span>
-                            Profile
-                          </div>
-                        </Link>
-                        <Link to="/orders" onClick={() => setShowDropdown(false)}>
-                          <div className="dropdown-item">
-                            <span className="dropdown-icon">📦</span>
-                            My Orders
-                          </div>
-                        </Link>
-                        <div className="dropdown-divider"></div>
-                        <div className="dropdown-item logout" onClick={handleLogout}>
-                          <span className="dropdown-icon">🚪</span>
-                          Logout
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Link to="/login"><button className='navbutloin'>Login/SignUp</button></Link>
-                )}
-            </div>
+          ) : <Link to="/login" className="navbutloin" onClick={closeMenus}>Sign in</Link>}
         </div>
-    </div>
+      </nav>
+    </header>
   )
 }
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <ellipse cx="400" cy="350" rx="260" ry="145" fill="#ffffff" stroke="#2a211d" stroke-width="8"/>
+        <path d="M165 350 Q210 210 400 225 Q590 210 635 350 Q570 300 510 315 Q450 335 400 305 Q350 275 290 320 Q230 350 165 350Z" fill="#e9b24d"/>
+        <circle cx="300" cy="382" r="38" fill="#d78f3f"/><circle cx="500" cy="390" r="38" fill="#4f8f5b"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Paneer Dosa</text>
+    </svg>

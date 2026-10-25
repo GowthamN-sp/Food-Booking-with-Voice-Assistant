@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+    <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#fff7f1"/><stop offset="100%" stop-color="#fbe6d7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-opacity=".12"/></filter></defs>
+    <rect width="800" height="620" rx="50" fill="url(#bg)"/>
+    <circle cx="110" cy="100" r="55" fill="#ff9f4b" opacity=".12"/><circle cx="680" cy="500" r="85" fill="#a75e3d" opacity=".08"/>
+    <g filter="url(#shadow)">
+        <circle cx="400" cy="315" r="220" fill="#ffffff"/>
+        <path d="M220 195 L585 285 L355 505 Z" fill="#f0b35b" stroke="#2a211d" stroke-width="8"/>
+        <path d="M248 217 L557 291 L360 478 Z" fill="#c95c3e"/>
+        <path d="M270 239 L530 300 L365 450 Z" fill="#ffd36a"/>
+        <circle cx="345" cy="304" r="24" fill="#d6533c"/><circle cx="430" cy="335" r="22" fill="#4f8f5b"/>
+        <circle cx="390" cy="397" r="21" fill="#d6533c"/><circle cx="470" cy="292" r="20" fill="#4f8f5b"/>
+        </g>
+    <text x="400" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#a75e3d" opacity=".85">Mexican Green Wave Pizza</text>
+    </svg>
